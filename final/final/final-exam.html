@@ -1,0 +1,171 @@
+<html>
+<head>
+    <title>CSCI-610 -- Final Exam</title>
+    
+    <!-- include vertex shaders -->
+
+    <script id="phong-V" type="x-shader/x-vertex">
+        #version 300 es
+        in vec3 aVertexPosition;
+        in vec3 aNormal;
+
+        uniform mat4 uModelT, uViewT, uProjT;
+        
+        out vec3 vNormal_world;
+        out vec3 vPosition_world;
+        
+        void main()
+        {
+            vec4 worldPos = uModelT * vec4(aVertexPosition, 1.0);
+            vPosition_world = worldPos.xyz;
+
+            mat3 normalMatrix = transpose(inverse(mat3(uModelT)));
+            vNormal_world = normalize(normalMatrix * aNormal);
+            
+            gl_Position = uProjT * uViewT * worldPos;
+        }
+    </script>
+
+     <!-- wireframe fragment Shaders -->
+     <script id="phong-F" type="x-shader/x-fragment">
+        #version 300 es
+        precision mediump float;
+
+        in vec3 vNormal_world;
+        in vec3 vPosition_world;
+
+        uniform vec3 uLightPos;
+        uniform vec3 uCameraPos;
+        uniform vec3 uAmbientColor, uDiffuseColor, uSpecularColor;
+        uniform float uShininess;
+        
+        // Color that is the result of this shader
+        out vec4 fragColor;
+
+        void main(void) {
+            vec3 N = normalize(vNormal_world);
+            vec3 L = normalize(uLightPos - vPosition_world);
+            vec3 V = normalize(uCameraPos - vPosition_world);
+            vec3 R = reflect(-L, N); // Reflection vector
+
+            // Ambient component
+            vec3 ambient = uAmbientColor;
+            // Diffuse component
+            float diff = max(dot(N, L), 0.0);
+            vec3 diffuse = diff * uDiffuseColor;
+            // Specular component
+            float spec = pow(max(dot(V, R), 0.0), uShininess);
+            vec3 specular = spec * uSpecularColor;
+
+            fragColor = vec4 (ambient + diffuse + specular, 1.0 );
+        }
+
+    </script>
+
+    <script id="texture-V" type="x-shader/x-vertex">
+        #version 300 es
+        in vec3 aVertexPosition;
+        in vec3 aNormal;
+        in vec2 aUV;
+
+        uniform mat4 uModelT, uViewT, uProjT;
+
+        out vec2 vUV;
+        out vec3 vNormal_world;
+        out vec3 vPosition_world;
+
+        void main() {
+            vec4 worldPos = uModelT * vec4(aVertexPosition, 1.0);
+            vPosition_world = worldPos.xyz;
+            mat3 normalMatrix = transpose(inverse(mat3(uModelT)));
+            vNormal_world = normalize(normalMatrix * aNormal);
+            vUV = aUV;
+            gl_Position = uProjT * uViewT * worldPos;
+        }
+    </script>
+
+    <script id="texture-F" type="x-shader/x-fragment">
+        #version 300 es
+        precision mediump float;
+
+        in vec2 vUV;
+        in vec3 vNormal_world;
+        in vec3 vPosition_world;
+
+        uniform sampler2D uTexture;
+        uniform vec3 uLightPos;
+
+        out vec4 fragColor;
+
+        void main() {
+            vec3 N = normalize(vNormal_world);
+            vec3 L = normalize(uLightPos - vPosition_world);
+            
+            float brightness = max(dot(N, L), 0.0) * 0.7 + 0.3;
+            
+            vec4 texColor = texture(uTexture, vUV);
+            fragColor = vec4(texColor.rgb * brightness, 1.0);
+        }
+    </script>
+     
+     <!-- Matrix library and code for standard transformations -->
+     <script type="text/javascript" src="gl-matrix-min.js"></script>
+    
+    <!-- include the main final functions -->
+    <script type="text/javascript" src="./finalMain.js"></script>
+    
+    <!-- shape functions -->
+    <script type="text/javascript" src="./cgIShape.js"></script>
+    <script type="text/javascript" src="./myShapes-min.js"></script>
+    
+    <!-- obj loader -->
+    <script type="text/javascript" src="./obj-loader.js"></script>
+
+    <!-- keyboard functions -->
+    <script type="text/javascript" src="./event.js"></script>
+    
+    <!-- texture images -->
+     <img id="world-texture" src="2_no_clouds_8k.jpg" style="display: none;"> </img>
+
+  <script type="text/javascript">
+    // Call init once the webpage has loaded
+    window.onload = init;
+  </script>
+</head>
+
+<body>
+  <h1>CSCI-610: Final Exam Image</h1>
+  <table>
+      <tr>
+          <td><canvas id="webgl-canvas" width="500" height="500">
+            Your browser does not support the HTML5 canvas element.
+          </canvas>
+            <img id="wood-texture" src="wood.jpg" style="display: none;">
+
+        </td>
+          
+          <td>
+              <h3>Controls</h3>
+              
+              <table border="1">
+              <tbody>
+              <tr>
+                <tr>
+                <td>Hold Down the Left Arrow</td>
+                <td>Rotate Scene Left</td>
+                </tr>
+                <td>Hold Down the Right Arrow</td>
+                <td>Rotate Scene Right</td>
+              </tr>
+              </tbody>
+              </table>
+              
+          </td>
+      </tr>
+  </table>
+  
+  
+
+</body>
+</html>
+
